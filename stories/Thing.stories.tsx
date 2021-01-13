@@ -1,15 +1,45 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Meta, Story } from '@storybook/react';
 import { useFilePicker } from '../src';
+interface TestComponentProps {
+  onSuccess?: () => void;
+  onLoading?: () => void;
+  onError?: () => void;
+}
+export const TemporaryComponent: React.FC<TestComponentProps> = ({ onSuccess, onError, onLoading }) => {
+  const [files, errors, reopen, loading, ref] = useFilePicker({ multiple: false });
 
-const TemporaryComponent = () => {
-  const [files, errors, reopen] = useFilePicker({ multiple: false });
-  useEffect(() => {
-    reopen();
-  });
-  if (files) return <div>success</div>;
-  if (errors) return <div>error</div>;
-  return <div>test</div>;
+  // useEffect(() => {
+  reopen();
+  // }, []);
+  console.log({ loading });
+  if (loading)
+    return (
+      <div>
+        loading
+        {onLoading && onLoading()}
+      </div>
+    );
+  if (files.length > 0)
+    return (
+      <div>
+        success
+        {onSuccess && onSuccess()}
+      </div>
+    );
+  if (errors.length > 0)
+    return (
+      <div>
+        error
+        {onError && onError()}
+      </div>
+    );
+  return (
+    <div>
+      test
+      <input ref={ref} type="file" data-testid="file-picker-input" accept="*" multiple={false} />
+    </div>
+  );
 };
 
 const meta: Meta = {

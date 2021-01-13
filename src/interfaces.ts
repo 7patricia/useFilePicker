@@ -9,7 +9,7 @@ export interface FileContent {
   content: string;
 }
 
-export type FilePickerReturnTypes = [FileContent[], FileError[], () => void, boolean];
+export type FilePickerReturnTypes = [FileContent[], FileError[], () => void, boolean, React.MutableRefObject<HTMLInputElement | null>];
 
 export interface ImageDims {
   minImageWidth?: number;

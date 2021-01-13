@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fromEvent, FileWithPath } from 'file-selector';
 import { UseFilePickerConfig, FileContent, FilePickerReturnTypes, FileError } from './interfaces';
 
@@ -7,10 +7,10 @@ function useFilePicker({ accept = '*', multiple = true, minFileSize, maxFileSize
   const [filesContent, setFilesContent] = useState<FileContent[]>([]);
   const [fileErrors, setFileErrors] = useState<FileError[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-
+  const ref = useRef<HTMLInputElement | null>(null);
   const openFileSelector = () => {
     const fileExtensions = accept instanceof Array ? accept.join(',') : accept;
-    openFileDialog(fileExtensions, multiple, evt => {
+    openFileDialog(ref, fileExtensions, multiple, evt => {
       fromEvent(evt).then(files => {
         setFiles(files as FileWithPath[]);
       });
@@ -18,6 +18,9 @@ function useFilePicker({ accept = '*', multiple = true, minFileSize, maxFileSize
   };
 
   useEffect(() => {
+    if (!files.length) {
+      return;
+    }
     setLoading(true);
     const filePromises = files.map(
       (file: FileWithPath) =>
@@ -62,28 +65,37 @@ function useFilePicker({ accept = '*', multiple = true, minFileSize, maxFileSize
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files]);
 
-  return [filesContent, fileErrors, openFileSelector, loading];
+  return [filesContent, fileErrors, openFileSelector, loading, ref];
 }
 
 export default useFilePicker;
 
-function openFileDialog(accept: string, multiple: boolean, callback: (arg: any) => void) {
+function openFileDialog(ref: React.MutableRefObject<HTMLInputElement | null>, accept: string, multiple: boolean, callback: (arg: any) => void) {
   // this function must be called from  a user
   // activation event (ie an onclick event)
 
-  // Create an input element
-  var inputElement = document.createElement('input');
-  // Set its type to file
-  inputElement.type = 'file';
-  // Set accept to the file types you want the user to select.
-  // Include both the file extension and the mime type
-  inputElement.accept = accept;
-  // Accept multiple files
-  inputElement.multiple = multiple;
-  // set onchange event to call callback when user has selected file
-  inputElement.addEventListener('change', callback);
-  // dispatch a click event to open the file dialog
-  inputElement.dispatchEvent(new MouseEvent('click'));
+  // Create an input element or use the one passed by user
+  if (!ref?.current) {
+    var inputElement = document.createElement('input');
+    // Set its type to file
+    inputElement.type = 'file';
+    // Set accept to the file types you want the user to select.
+    // Include both the file extension and the mime type
+    inputElement.accept = accept;
+    // Accept multiple files
+    inputElement.multiple = multiple;
+    // set onchange event to call callback when user has selected file
+    inputElement.addEventListener('change', callback);
+    // dispatch a click event to open the file dialog
+    inputElement.dispatchEvent(new MouseEvent('click'));
+  } else {
+    const inputElement = ref.current;
+    inputElement.addEventListener('change', callback);
+    inputElement.type = inputElement.type ?? 'file';
+    inputElement.accept = inputElement.accept ?? accept;
+    inputElement.multiple = inputElement.multiple ?? multiple;
+    inputElement.dispatchEvent(new MouseEvent('click'));
+  }
 }
 
 //Const values
