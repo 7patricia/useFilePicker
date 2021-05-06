@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fromEvent, FileWithPath } from 'file-selector';
-import { UseFilePickerConfig, FileContent, FilePickerReturnTypes, FileError, ReaderMethod } from './interfaces';
+import { v4 as uuidv4 } from 'uuid';
+import { UseFilePickerConfig, FileContent, FileWithID, FilePickerReturnTypes, FileError, ReaderMethod } from './interfaces';
 
 function useFilePicker({
   accept = '*',
@@ -15,14 +16,15 @@ function useFilePicker({
   const [filesContent, setFilesContent] = useState<FileContent[]>([]);
   const [fileErrors, setFileErrors] = useState<FileError[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [plainFiles, setPlainFiles] = useState<File[]>([]);
+  const [plainFiles, setPlainFiles] = useState<FileWithID[]>([]);
 
   const openFileSelector = () => {
     const fileExtensions = accept instanceof Array ? accept.join(',') : accept;
     openFileDialog(fileExtensions, multiple, evt => {
       const inputElement = evt.target as HTMLInputElement;
       const plainFiles = inputElement.files ? Array.from(inputElement.files) : [];
-      setPlainFiles(plainFiles);
+    
+      setPlainFiles(plainFiles.map(file => ({ ...file, id: uuidv4() })));
 
       if (limitFilesConfig) {
         if (limitFilesConfig.max && plainFiles.length > limitFilesConfig.max) {
@@ -40,6 +42,10 @@ function useFilePicker({
         setFiles(files as FileWithPath[]);
       });
     });
+  };
+
+  const removeFile = (id: string) => {
+    setPlainFiles(plainFiles.filter(file => file.id !== id));
   };
 
   useEffect(() => {
@@ -99,7 +105,7 @@ function useFilePicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files]);
 
-  return [openFileSelector, { filesContent, errors: fileErrors, loading, plainFiles }];
+  return [openFileSelector, { filesContent, errors: fileErrors, loading, plainFiles }, removeFile];
 }
 
 export default useFilePicker;
